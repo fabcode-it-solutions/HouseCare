@@ -1,0 +1,52 @@
+name: Deploy Edge Functions to shared Supabase project
+
+# Manual only, on purpose — same guard pattern as hotsflow-core's
+# deploy-migrations.yml. Deploys exactly one function from this repo's
+# supabase/functions/* to the real hosted project per run. Never
+# triggers automatically on push.
+#
+# function_name is a `choice` input (no free text, no "all") so a run
+# can only ever target one of the three functions actually enumerated
+# here — there is no value that deploys more than one.
+on:
+  workflow_dispatch:
+    inputs:
+      function_name:
+        description: "Edge Function to deploy (exactly one per run)"
+        required: true
+        type: choice
+        options:
+          - create-staff-account
+          - notify-new-request
+          - sync-pms-stays
+      confirm_project_ref:
+        description: "Type the target Supabase project ref to confirm (must match the SUPABASE_PROJECT_REF repo variable exactly)"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify target project ref matches expectation
+        run: |
+          if [ "${{ inputs.confirm_project_ref }}" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then
+            echo "::error::confirm_project_ref ('${{ inputs.confirm_project_ref }}') does not match the configured SUPABASE_PROJECT_REF repo variable — refusing to proceed."
+            exit 1
+          fi
+          echo "Target project ref confirmed: ${{ vars.SUPABASE_PROJECT_REF }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy selected function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FUNCTION_NAME: ${{ inputs.function_name }}
+        run: |
+          echo "Deploying exactly one function: $FUNCTION_NAME"
+          supabase functions deploy "$FUNCTION_NAME" --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
