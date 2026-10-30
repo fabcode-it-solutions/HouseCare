@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:module": "vite build --config vite.module.config.ts",
+    "dev": "node init && vite",
+    "build": "node init && tsc -b && vite build",
+    "build:module": "node init && vite build --config vite.module.config.ts",
     "lint": "oxlint",
     "test": "node --experimental-strip-types --test src/lib/hotel-query-scope.test.mjs",
     "preview": "vite preview"
